@@ -1,6 +1,7 @@
 package com.yeonberry.weatherapp.ui
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -25,6 +26,9 @@ class WeatherActivity : AppCompatActivity() {
         initAdapter()
         setRefresh()
         showLocationWeatherList()
+        showError()
+        setLoadingIndicator()
+        viewModel.setIsLoading()
         viewModel.searchLocation()
     }
 
@@ -54,6 +58,19 @@ class WeatherActivity : AppCompatActivity() {
             binding.rvWeather.isVisible = true
             binding.swipeRefresh.isRefreshing = false
             weatherAdapter.addAllItem(it)
+        }
+    }
+
+    private fun showError() {
+        viewModel.errorMessage.observe(this) {
+            binding.swipeRefresh.isRefreshing = false
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setLoadingIndicator() {
+        viewModel.isLoading.observe(this) {
+            binding.progressBar.isVisible = it
         }
     }
 }

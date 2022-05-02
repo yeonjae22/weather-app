@@ -19,6 +19,16 @@ class WeatherViewModel @Inject constructor(
     private val _locationWeatherList = MutableLiveData<List<LocationWeather>>()
     val locationWeatherList: LiveData<List<LocationWeather>> get() = _locationWeatherList
 
+    private val _errorMessage = MutableLiveData<String>()
+    val errorMessage: LiveData<String> get() = _errorMessage
+
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
+    fun setIsLoading() {
+        _isLoading.value = true
+    }
+
     fun searchLocation() {
         viewModelScope.launch {
             val response = repository.searchLocation()
@@ -41,7 +51,10 @@ class WeatherViewModel @Inject constructor(
                 }
 
                 _locationWeatherList.value = locationWeatherList
+            } else {
+                _errorMessage.value = response.code().toString()
             }
+            _isLoading.value = false
         }
     }
 }
