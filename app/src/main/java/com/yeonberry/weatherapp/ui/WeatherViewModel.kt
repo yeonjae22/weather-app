@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.yeonberry.weatherapp.data.model.LocationWeather
 import com.yeonberry.weatherapp.data.repository.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
@@ -25,12 +26,17 @@ class WeatherViewModel @Inject constructor(
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
 
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        _errorMessage.value = throwable.localizedMessage
+        _isLoading.value = false
+    }
+
     fun setIsLoading() {
         _isLoading.value = true
     }
 
     fun searchLocation() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val response = repository.searchLocation()
             if (response.isSuccessful) {
                 val responses = response.body()?.map { location ->
@@ -41,16 +47,20 @@ class WeatherViewModel @Inject constructor(
 
                 val locationWeatherList = arrayListOf<LocationWeather>()
                 responses?.forEach {
-                    locationWeatherList.add(
-                        LocationWeather(
-                            it?.body()?.title,
-                            it?.body()?.weather?.get(0),
-                            it?.body()?.weather?.get(1)
+                    if (it?.isSuccessful == true) {
+                        locationWeatherList.add(
+                            LocationWeather(
+                                it.body()?.title,
+                                it.body()?.weather?.get(0),
+                                it.body()?.weather?.get(1)
+                            )
                         )
-                    )
+                    } else {
+                        _errorMessage.value = response.code().toString()
+                    }
                 }
-
                 _locationWeatherList.value = locationWeatherList
+
             } else {
                 _errorMessage.value = response.code().toString()
             }
